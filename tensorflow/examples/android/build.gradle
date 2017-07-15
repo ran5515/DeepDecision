@@ -76,12 +76,13 @@ apply plugin: 'com.android.application'
 android {
     compileSdkVersion 23
     buildToolsVersion "25.0.2"
-
+    useLibrary 'org.apache.http.legacy'
     if (nativeBuildSystem == 'cmake') {
         defaultConfig {
             applicationId = 'com.tensorflow.demo'
-            minSdkVersion 21
+            minSdkVersion 23
             targetSdkVersion 23
+
             ndk {
                 abiFilters "${cpuType}"
             }

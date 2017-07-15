@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="utf-8"?>
+<merger version="3"><dataSet config="main"><source path="/Users/Xukan/Desktop/workspace/Android/900SecondsSDK-Android/example21/libstreaming/src/main/assets"/><source path="/Users/Xukan/Desktop/workspace/Android/900SecondsSDK-Android/example21/libstreaming/build/generated/assets/shaders/debug"/></dataSet><dataSet config="debug"><source path="/Users/Xukan/Desktop/workspace/Android/900SecondsSDK-Android/example21/libstreaming/src/debug/assets"/></dataSet></merger>

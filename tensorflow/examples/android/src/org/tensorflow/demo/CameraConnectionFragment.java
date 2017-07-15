@@ -50,6 +50,7 @@ import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.Button;
 import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -63,7 +64,10 @@ import org.tensorflow.demo.R;
 
 public class CameraConnectionFragment extends Fragment {
   private static final Logger LOGGER = new Logger();
-
+  public static Boolean changed = false;
+  public static Boolean big = false;
+  public static int size = 0;
+  public static int CA = 0;
   /**
    * The camera preview size will be chosen to be the smallest frame by pixel size capable of
    * containing a DESIRED_SIZE x DESIRED_SIZE square.
@@ -127,6 +131,8 @@ public class CameraConnectionFragment extends Fragment {
    * An {@link AutoFitTextureView} for camera preview.
    */
   private AutoFitTextureView textureView;
+  private Button changeMode;
+  private Button changeRes;
 
   /**
    * A {@link CameraCaptureSession } for camera preview.
@@ -323,11 +329,40 @@ public class CameraConnectionFragment extends Fragment {
   @Override
   public void onViewCreated(final View view, final Bundle savedInstanceState) {
     textureView = (AutoFitTextureView) view.findViewById(R.id.texture);
+    changeMode = (Button) view.findViewById(R.id.changeMode);
+    changeRes = (Button) view.findViewById(R.id.crop);
   }
 
   @Override
   public void onActivityCreated(final Bundle savedInstanceState) {
     super.onActivityCreated(savedInstanceState);
+    changeRes.setOnClickListener(new View.OnClickListener(){
+      @Override
+      public void onClick(View v) {
+        changed = true;
+        size = (size + 1) % 7;
+        changeMode.setText("clicked");
+      }
+    });
+    changeMode.setOnClickListener(new View.OnClickListener() {
+
+      @Override
+      public void onClick(View v) {
+        //AppendLog.Log("Battery Test started!");
+        changed = true;
+//        big = !big;
+//        if (big) {
+//          changeMode.setText("click to small");
+//          Toast.makeText(getContext(), "Big YOLO!", Toast.LENGTH_SHORT).show();
+//        } else {
+//          changeMode.setText("click to big");
+//          Toast.makeText(getContext(), "Small YOLO!", Toast.LENGTH_SHORT).show();
+//        }
+        CA = 1;
+        Toast.makeText(getContext(), "CA: " + CA, Toast.LENGTH_SHORT).show();
+
+      }
+    });
   }
 
   @Override

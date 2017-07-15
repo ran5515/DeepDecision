@@ -1,0 +1,10 @@
+[
+    {
+        "merged": "/Users/Xukan/Desktop/study/CS204/tensorflow/tensorflow/examples/android/gradleBuild/intermediates/res/merged/debug/drawable-mdpi/ic_launcher.png",
+        "source": "/Users/Xukan/Desktop/study/CS204/tensorflow/tensorflow/examples/android/res/drawable-mdpi/ic_launcher.png"
+    },
+    {
+        "merged": "/Users/Xukan/Desktop/study/CS204/tensorflow/tensorflow/examples/android/gradleBuild/intermediates/res/merged/debug/drawable-mdpi/ic_action_info.png",
+        "source": "/Users/Xukan/Desktop/study/CS204/tensorflow/tensorflow/examples/android/res/drawable-mdpi/ic_action_info.png"
+    }
+]

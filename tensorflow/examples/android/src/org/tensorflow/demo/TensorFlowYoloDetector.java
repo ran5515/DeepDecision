@@ -36,7 +36,7 @@ public class TensorFlowYoloDetector implements Classifier {
 
   private static final int NUM_CLASSES = 20;
 
-  private static final int NUM_BOXES_PER_BLOCK = 5;
+  private static final int NUM_BOXES_PER_BLOCK = 5;//
 
   // TODO(andrewharp): allow loading anchors and classes
   // from files.
@@ -47,6 +47,10 @@ public class TensorFlowYoloDetector implements Classifier {
     9.42, 5.11,
     16.62, 10.52
   };
+    
+//      private static final double[] ANCHORS = {
+//          0.77871, 1.14074, 3.00525, 4.31277, 9.22725, 9.61974
+//      };
 
   private static final String[] LABELS = {
     "aeroplane",

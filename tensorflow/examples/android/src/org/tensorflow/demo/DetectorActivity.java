@@ -16,8 +16,10 @@
 
 package org.tensorflow.demo;
 
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
@@ -31,6 +33,7 @@ import android.media.ImageReader;
 import android.media.ImageReader.OnImageAvailableListener;
 import android.os.SystemClock;
 import android.os.Trace;
+import android.util.Log;
 import android.util.Size;
 import android.util.TypedValue;
 import android.view.Display;
@@ -43,6 +46,9 @@ import org.tensorflow.demo.env.ImageUtils;
 import org.tensorflow.demo.env.Logger;
 import org.tensorflow.demo.tracking.MultiBoxTracker;
 import org.tensorflow.demo.R;
+import org.tensorflow.demo.video.MainActivity;
+
+import static java.lang.Thread.sleep;
 
 /**
  * An activity that uses a TensorFlowMultiBoxDetector and ObjectTracker to detect and then track
@@ -67,16 +73,18 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
   // Graphs and models downloaded from http://pjreddie.com/darknet/yolo/ may be converted e.g. via
   // DarkFlow (https://github.com/thtrieu/darkflow). Sample command:
   // ./flow --model cfg/tiny-yolo-voc.cfg --load bin/tiny-yolo-voc.weights --savepb --verbalise=True
-  private static final String YOLO_MODEL_FILE = "file:///android_asset/graph-tiny-yolo-voc.pb";
-  private static final int YOLO_INPUT_SIZE = 416;
+  private static String YOLO_MODEL_FILE = "file:///android_asset/graph-tiny-yolo-voc.pb";
+  private static String YOLO_MODEL_FILE2 = "file:///android_asset/graph-yolo-voc.pb";
+  private static int YOLO_INPUT_SIZE = 160;
   private static final String YOLO_INPUT_NAME = "input";
   private static final String YOLO_OUTPUT_NAMES = "output";
   private static final int YOLO_BLOCK_SIZE = 32;
 
   // Default to the included multibox model.
-  private static final boolean USE_YOLO = false;
+  private static final boolean USE_YOLO = true;
 
-  private static final int CROP_SIZE = USE_YOLO ? YOLO_INPUT_SIZE : MB_INPUT_SIZE;
+  private static int CROP_SIZE = USE_YOLO ? YOLO_INPUT_SIZE : MB_INPUT_SIZE;
+  private static int CROP_SIZE1, CROP_SIZE2;
 
   // Minimum detection confidence to track a detection.
   private static final float MINIMUM_CONFIDENCE = USE_YOLO ? 0.25f : 0.1f;
@@ -90,7 +98,9 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
   private Integer sensorOrientation;
 
-  private Classifier detector;
+  public Classifier detector;
+  public Classifier detector1;//changed to help merge yolo and tiny yolo
+  public Classifier detector2;
 
   private int previewWidth = 0;
   private int previewHeight = 0;
@@ -114,7 +124,25 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
   private BorderedText borderedText;
 
+
   private long lastProcessingTimeMs;
+
+  public void change(int x){
+    if (x == 0){//small
+      YOLO_MODEL_FILE = "file:///android_asset/graph-tiny-yolo-voc.pb";
+    }
+    else{
+      YOLO_MODEL_FILE = "file:///android_asset/graph-yolo-voc.pb";
+    }
+    detector =
+            TensorFlowYoloDetector.create(
+                    getAssets(),
+                    YOLO_MODEL_FILE,
+                    YOLO_INPUT_SIZE,
+                    YOLO_INPUT_NAME,
+                    YOLO_OUTPUT_NAMES,
+                    YOLO_BLOCK_SIZE);
+  }
 
   @Override
   public void onPreviewSizeChosen(final Size size, final int rotation) {
@@ -127,7 +155,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     tracker = new MultiBoxTracker(this);
 
     if (USE_YOLO) {
-      detector =
+      detector1 =
           TensorFlowYoloDetector.create(
               getAssets(),
               YOLO_MODEL_FILE,
@@ -135,6 +163,15 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
               YOLO_INPUT_NAME,
               YOLO_OUTPUT_NAMES,
               YOLO_BLOCK_SIZE);
+//      detector2 =
+//              TensorFlowYoloDetector.create(
+//                      getAssets(),
+//                      YOLO_MODEL_FILE2,
+//                      YOLO_INPUT_SIZE,
+//                      YOLO_INPUT_NAME,
+//                      YOLO_OUTPUT_NAMES,
+//                      YOLO_BLOCK_SIZE);
+      detector = detector1;
     } else {
       detector =
           TensorFlowMultiBoxDetector.create(
@@ -161,6 +198,11 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     LOGGER.i("Initializing at size %dx%d", previewWidth, previewHeight);
     rgbBytes = new int[previewWidth * previewHeight];
     rgbFrameBitmap = Bitmap.createBitmap(previewWidth, previewHeight, Config.ARGB_8888);
+
+      CROP_SIZE1 = YOLO_INPUT_SIZE;
+    CROP_SIZE = CROP_SIZE2 = CROP_SIZE1;
+      Log.v("imagesize",""+CROP_SIZE1);
+
     croppedBitmap = Bitmap.createBitmap(CROP_SIZE, CROP_SIZE, Config.ARGB_8888);
 
     frameToCropTransform =
@@ -192,6 +234,8 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
             if (!isDebug()) {
               return;
             }
+
+
             final Bitmap copy = cropCopyBitmap;
             if (copy == null) {
               return;
@@ -209,6 +253,17 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
             canvas.drawBitmap(copy, matrix, new Paint());
 
             final Vector<String> lines = new Vector<String>();
+
+//            if(CameraConnectionFragment.changed){
+//              CameraConnectionFragment.changed = false;
+//              if(CameraConnectionFragment.big){
+//                change(1);
+//              }else{
+//                change(0);
+//              }
+//            }
+
+
             if (detector != null) {
               final String statString = detector.getStatString();
               final String[] statLines = statString.split("\n");
@@ -308,36 +363,107 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
         new Runnable() {
           @Override
           public void run() {
-            final long startTime = SystemClock.uptimeMillis();
-            final List<Classifier.Recognition> results = detector.recognizeImage(croppedBitmap);
-            lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
 
-            cropCopyBitmap = Bitmap.createBitmap(croppedBitmap);
-            final Canvas canvas = new Canvas(cropCopyBitmap);
-            final Paint paint = new Paint();
-            paint.setColor(Color.RED);
-            paint.setStyle(Style.STROKE);
-            paint.setStrokeWidth(2.0f);
+            if(CameraConnectionFragment.changed){
+              CameraConnectionFragment.changed = false;
+              CROP_SIZE1 = 160 + CameraConnectionFragment.size * 64;
+              YOLO_INPUT_SIZE = CROP_SIZE = CROP_SIZE2 = CROP_SIZE1;
+              //Log.e("imagesize",":"+CROP_SIZE1);
 
-            final List<Classifier.Recognition> mappedRecognitions =
-                new LinkedList<Classifier.Recognition>();
+              croppedBitmap = Bitmap.createBitmap(CROP_SIZE1, CROP_SIZE2, Config.ARGB_8888);
 
-            for (final Classifier.Recognition result : results) {
-              final RectF location = result.getLocation();
-              if (location != null && result.getConfidence() >= MINIMUM_CONFIDENCE) {
-                canvas.drawRect(location, paint);
+              frameToCropTransform =
+                      ImageUtils.getTransformationMatrix(
+                              previewWidth, previewHeight,
+                              CROP_SIZE1, CROP_SIZE2,
+                              sensorOrientation, MAINTAIN_ASPECT);
+              final long t1 = SystemClock.uptimeMillis();
+              if(CameraConnectionFragment.CA == 1){
+                Log.e("CACACA","OK1");
+//                onPause();
 
-                cropToFrameTransform.mapRect(location);
-                result.setLocation(location);
-                mappedRecognitions.add(result);
+                stopCam();
+                Log.e("CACACA","OK2");
+                try {
+                  sleep(100);
+                } catch (InterruptedException e) {
+                  e.printStackTrace();
+                }
+                Log.e("CACACA","OK3");
+                Intent intent = new Intent(DetectorActivity.this, MainActivity.class);
+                startActivity(intent);
+                Log.e("CACACA","here");
               }
+              if(CameraConnectionFragment.big){
+                detector = null;
+                System.gc();
+                Log.e("imagesize","before");
+                detector =
+                        TensorFlowYoloDetector.create(
+                                getAssets(),
+                                YOLO_MODEL_FILE2,
+                                YOLO_INPUT_SIZE,
+                                YOLO_INPUT_NAME,
+                                YOLO_OUTPUT_NAMES,
+                                YOLO_BLOCK_SIZE);
+                Log.e("imagesize","after");
+//                detector = detector2;
+              }else{
+                detector = null;
+                System.gc();
+                detector =
+                        TensorFlowYoloDetector.create(
+                                getAssets(),
+                                YOLO_MODEL_FILE,
+                                YOLO_INPUT_SIZE,
+                                YOLO_INPUT_NAME,
+                                YOLO_OUTPUT_NAMES,
+                                YOLO_BLOCK_SIZE);
+                //detector = detector1;
+              }
+              final long t2 = SystemClock.uptimeMillis();
+              Log.e("loadtime","time:" + (t2-t1));
             }
 
-            tracker.trackResults(mappedRecognitions, luminance, currTimestamp);
-            trackingOverlay.postInvalidate();
+            final long startTime = SystemClock.uptimeMillis();
 
-            requestRender();
-            computing = false;
+
+
+            int h = croppedBitmap.getHeight();
+            //Log.e("imagesize", "getHeight:"+ croppedBitmap.getHeight());
+
+            if(h==YOLO_INPUT_SIZE) {
+              final List<Classifier.Recognition> results = detector.recognizeImage(croppedBitmap);
+
+              lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
+              Log.e("imagesize","time: "+ lastProcessingTimeMs);
+              cropCopyBitmap = Bitmap.createBitmap(croppedBitmap);
+              final Canvas canvas = new Canvas(cropCopyBitmap);
+              final Paint paint = new Paint();
+              paint.setColor(Color.RED);
+              paint.setStyle(Style.STROKE);
+              paint.setStrokeWidth(2.0f);
+
+              final List<Classifier.Recognition> mappedRecognitions =
+                      new LinkedList<Classifier.Recognition>();
+
+              for (final Classifier.Recognition result : results) {
+                final RectF location = result.getLocation();
+                if (location != null && result.getConfidence() >= MINIMUM_CONFIDENCE) {
+                  canvas.drawRect(location, paint);
+
+                  cropToFrameTransform.mapRect(location);
+                  result.setLocation(location);
+                  mappedRecognitions.add(result);
+                }
+              }
+
+              tracker.trackResults(mappedRecognitions, luminance, currTimestamp);
+              trackingOverlay.postInvalidate();
+
+              requestRender();
+              computing = false;
+            }///////////////////
           }
         });
 

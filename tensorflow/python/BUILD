@@ -87,6 +87,7 @@ py_library(
         "//tensorflow/python/feature_column:feature_column_py",
         "//tensorflow/python/ops/losses",
         "//tensorflow/python/ops/distributions",
+        "//tensorflow/python/profiler",
         "//tensorflow/python/saved_model",
     ] + if_not_windows([
         "//tensorflow/contrib:contrib_py",
@@ -183,7 +184,6 @@ cc_library(
         "//tensorflow/core:lib",
         "//tensorflow/core:protos_all_cc",
         "//tensorflow/core/grappler:grappler_item",
-        "//tensorflow/core/grappler/clusters:cluster",
         "//tensorflow/core/grappler/costs:graph_properties",
         "//tensorflow/core/grappler/costs:utils",
     ],
@@ -233,6 +233,7 @@ cc_library(
         ":numpy_lib",
         "//tensorflow/core:framework",
         "//tensorflow/core:lib",
+        "//tensorflow/core:protos_all_cc",
         "//tensorflow/core:script_ops_op_lib",
         "//third_party/py/numpy:headers",
         "//util/python:python_headers",
@@ -2026,6 +2027,7 @@ py_library(
         ":util",
         ":variable_scope",
         ":variables",
+        "//tensorflow/python/ops/distributions",
     ],
 )
 
@@ -2377,6 +2379,7 @@ cuda_py_test(
         ":variables",
         "//third_party/py/numpy",
     ],
+    tags = ["no_windows"],
 )
 
 cuda_py_test(
@@ -2786,6 +2789,7 @@ tf_py_wrap_cc(
         ":tf_session_helper",
         "//tensorflow/c:c_api",
         "//tensorflow/c:checkpoint_reader",
+        "//tensorflow/c:python_api",
         "//tensorflow/c:tf_status_helper",
         "//tensorflow/core/distributed_runtime/rpc:grpc_server_lib",
         "//tensorflow/core/distributed_runtime/rpc:grpc_session",
@@ -2797,8 +2801,8 @@ tf_py_wrap_cc(
         "//tensorflow/core:reader_base",
         "//tensorflow/core/debug",
         "//tensorflow/core/distributed_runtime:server_lib",
+        "//tensorflow/core/profiler/internal:print_model_analysis",
         "//tensorflow/tools/graph_transforms:transform_graph_lib",
-        "//tensorflow/tools/tfprof/internal:print_model_analysis",
         "//util/python:python_headers",
     ] + (tf_additional_lib_deps() +
          tf_additional_plugin_deps() +
@@ -2981,6 +2985,9 @@ cuda_py_test(
         ":variables",
         "//third_party/py/numpy",
     ],
+    tags = [
+        "no_oss",  # b/62956105: port conflicts.
+    ],
 )
 
 tf_py_test(
@@ -2994,6 +3001,10 @@ tf_py_test(
         ":framework_for_generated_wrappers",
         ":training",
         ":variables",
+    ],
+    tags = [
+        "no_oss",  # b/62956105: port conflicts.
+        "notsan",  # data race due to b/62910646
     ],
 )
 
@@ -3083,6 +3094,7 @@ py_test(
     tags = [
         "no_gpu",
         "no_pip_gpu",
+        "notsan",  # data race due to b/62910646
     ],
     deps = [
         ":client",

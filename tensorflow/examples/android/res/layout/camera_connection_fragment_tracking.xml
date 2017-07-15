@@ -21,6 +21,20 @@
           android:id="@+id/texture"
           android:layout_width="wrap_content"
           android:layout_height="wrap_content"/>
+    <Button
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:id="@+id/crop"
+        android:text="click"
+        android:layout_gravity="right"
+        android:gravity="right"
+        />
+          <Button
+          android:layout_width="wrap_content"
+          android:layout_height="wrap_content"
+          android:id="@+id/changeMode"
+          android:text="change to big"
+          />
 
       <org.tensorflow.demo.OverlayView
           android:id="@+id/tracking_overlay"

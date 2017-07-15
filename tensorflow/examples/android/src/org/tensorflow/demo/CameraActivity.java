@@ -19,6 +19,7 @@ package org.tensorflow.demo;
 import android.Manifest;
 import android.app.Activity;
 import android.app.Fragment;
+import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.Image.Plane;
 import android.media.ImageReader.OnImageAvailableListener;
@@ -26,6 +27,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.util.Log;
 import android.util.Size;
 import android.view.KeyEvent;
 import android.view.WindowManager;
@@ -33,6 +35,7 @@ import android.widget.Toast;
 import java.nio.ByteBuffer;
 import org.tensorflow.demo.env.Logger;
 import org.tensorflow.demo.R;
+import org.tensorflow.demo.video.MainActivity;
 
 public abstract class CameraActivity extends Activity implements OnImageAvailableListener {
   private static final Logger LOGGER = new Logger();
@@ -76,6 +79,30 @@ public abstract class CameraActivity extends Activity implements OnImageAvailabl
     handlerThread = new HandlerThread("inference");
     handlerThread.start();
     handler = new Handler(handlerThread.getLooper());
+  }
+
+  public synchronized void stopCam(){
+    Log.e("CACACA","stopCam1");
+    handlerThread.quitSafely();
+    Log.e("CACACA","stopCam2");
+
+    Intent intent = new Intent(CameraActivity.this, MainActivity.class);
+    startActivity(intent);
+
+
+//    try {
+//      Intent intent = new Intent(CameraActivity.this, MainActivity.class);
+//      startActivity(intent);
+//      Log.e("CACACA","stopCam3");
+//      handlerThread.join();
+//      Log.e("CACACA","stopCam4");
+//      handlerThread = null;
+//      handler = null;
+//
+//      Log.e("CACACA","stopCam5");
+//    } catch (final InterruptedException e) {
+//      LOGGER.e(e, "Exception!");
+//    }
   }
 
   @Override

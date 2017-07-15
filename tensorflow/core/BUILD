@@ -282,6 +282,7 @@ cc_library(
         "platform/env_time.h",
         "platform/file_system.h",
         "platform/fingerprint.h",
+        "platform/grpc_response_reader.h",
         "platform/init_main.h",
         "platform/logging.h",
         "platform/macros.h",
@@ -500,7 +501,6 @@ cc_library(
 # Generates library per group of ops.
 tf_gen_op_libs(
     op_lib_names = [
-        "array_ops",
         "bitwise_ops",
         "candidate_sampling_ops",
         "control_flow_ops",
@@ -532,6 +532,13 @@ tf_gen_op_libs(
         "string_ops",
         "training_ops",
     ],
+)
+
+tf_gen_op_libs(
+    op_lib_names = [
+        "array_ops",
+    ],
+    deps = [":protos_all_cc"],
 )
 
 tf_gen_op_libs(
@@ -819,7 +826,6 @@ cc_library(
         ":test",
         "//tensorflow/core/kernels:constant_op",
         "//tensorflow/core/kernels:ops_util",
-        "//tensorflow/core/platform/default/build_config:gtest",
     ],
 )
 
@@ -1216,6 +1222,7 @@ LIB_INTERNAL_WINDOWS_DEPS = glob(
         "platform/*.cc",
         "platform/profile_utils/**/*.h",
         "platform/profile_utils/**/*.cc",
+    ] + [
         "framework/resource_handle.h",
         "framework/resource_handle.cc",
     ],
@@ -1711,7 +1718,7 @@ cc_library(
     ],
     visibility = [
         "//tensorflow/compiler:__subpackages__",
-        "//tensorflow/tools/tfprof:__subpackages__",
+        "//tensorflow/core/profiler:__subpackages__",
     ],
     deps = [":lib_internal"],
 )
@@ -2099,6 +2106,17 @@ cc_test(
     deps = [
         ":lib",
         ":lib_internal",
+        ":test",
+        ":test_main",
+    ],
+)
+
+tf_cc_test(
+    name = "framework_op_gen_lib_test",
+    size = "small",
+    srcs = ["framework/op_gen_lib_test.cc"],
+    deps = [
+        ":op_gen_lib",
         ":test",
         ":test_main",
     ],

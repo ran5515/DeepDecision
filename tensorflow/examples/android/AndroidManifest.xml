@@ -22,25 +22,20 @@
     <uses-feature android:name="android.hardware.camera" />
     <uses-feature android:name="android.hardware.camera.autofocus" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
+     <uses-permission android:name="android.permission.INTERNET" />
+     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+     <uses-permission android:name="android.permission.WAKE_LOCK" />
 
     <uses-sdk
         android:minSdkVersion="21"
         android:targetSdkVersion="23" />
 
     <application android:allowBackup="true"
+        android:largeHeap="true"
         android:debuggable="true"
         android:label="@string/app_name"
         android:icon="@drawable/ic_launcher"
         android:theme="@style/MaterialTheme">
-
-        <activity android:name="org.tensorflow.demo.ClassifierActivity"
-                  android:screenOrientation="portrait"
-                  android:label="@string/activity_name_classification">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
-        </activity>
 
         <activity android:name="org.tensorflow.demo.DetectorActivity"
                   android:screenOrientation="portrait"
@@ -50,15 +45,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
-        <activity android:name="org.tensorflow.demo.StylizeActivity"
-                  android:screenOrientation="portrait"
-                  android:label="@string/activity_name_stylize">
-            <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
-            </intent-filter>
+        
+        <activity
+            android:name="org.tensorflow.demo.video.MainActivity" >
         </activity>
+        
+
     </application>
 
 </manifest>
