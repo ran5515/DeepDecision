@@ -19,6 +19,7 @@ package org.tensorflow.demo;
 import android.Manifest;
 import android.app.Activity;
 import android.app.Fragment;
+import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.media.Image.Plane;
@@ -63,6 +64,22 @@ public abstract class CameraActivity extends Activity implements OnImageAvailabl
     } else {
       requestPermission();
     }
+
+    Handler mHandler = new Handler();
+    new Thread(new Runnable() {
+      @Override
+      public void run() {
+        // TODO Auto-generated method stub
+        while (true) {
+          try {
+            Thread.sleep(10000);
+            Log.e("decisiondeci","hehe");
+          } catch (Exception e) {
+            // TODO: handle exception
+          }
+        }
+      }
+    }).start();
   }
 
   @Override

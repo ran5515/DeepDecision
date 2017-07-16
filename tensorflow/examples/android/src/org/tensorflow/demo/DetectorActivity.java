@@ -16,6 +16,8 @@
 
 package org.tensorflow.demo;
 
+import android.app.ActivityManager;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.Bitmap.Config;
@@ -31,6 +33,8 @@ import android.media.Image;
 import android.media.Image.Plane;
 import android.media.ImageReader;
 import android.media.ImageReader.OnImageAvailableListener;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
 import android.os.SystemClock;
 import android.os.Trace;
 import android.util.Log;
@@ -363,6 +367,28 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
         new Runnable() {
           @Override
           public void run() {
+
+//            ActivityManager.MemoryInfo mi = new ActivityManager.MemoryInfo();
+//            ActivityManager activityManager = (ActivityManager) getSystemService(ACTIVITY_SERVICE);
+//            activityManager.getMemoryInfo(mi);
+//            double availableMegs = mi.availMem / 0x100000L;
+//            Log.e("memmem", "mem: " + availableMegs);
+
+
+            final Runtime runtime = Runtime.getRuntime();
+            final long usedMemInMB=(runtime.totalMemory() - runtime.freeMemory()) / 1048576L;
+            final long maxHeapSizeInMB=runtime.maxMemory() / 1048576L;
+            final long availHeapSizeInMB = maxHeapSizeInMB - usedMemInMB;
+            Log.e("memmem", "mem: " + availHeapSizeInMB);
+
+
+            WifiManager wifiManager = (WifiManager)getApplication().getSystemService(Context.WIFI_SERVICE);
+            WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+            if (wifiInfo != null) {
+              Integer linkSpeed = wifiInfo.getLinkSpeed(); //measured using WifiInfo.LINK_SPEED_UNITS
+              Log.e("wifiwifi", "speed: " + linkSpeed);
+            }
+
 
             if(CameraConnectionFragment.changed){
               CameraConnectionFragment.changed = false;
