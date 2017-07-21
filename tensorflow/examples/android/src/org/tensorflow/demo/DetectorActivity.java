@@ -131,6 +131,9 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 
   private long lastProcessingTimeMs;
 
+
+
+
   public void change(int x){
     if (x == 0){//small
       YOLO_MODEL_FILE = "file:///android_asset/graph-tiny-yolo-voc.pb";
@@ -159,14 +162,45 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
     tracker = new MultiBoxTracker(this);
 
     if (USE_YOLO) {
-      detector1 =
-          TensorFlowYoloDetector.create(
-              getAssets(),
-              YOLO_MODEL_FILE,
-              YOLO_INPUT_SIZE,
-              YOLO_INPUT_NAME,
-              YOLO_OUTPUT_NAMES,
-              YOLO_BLOCK_SIZE);
+      String s = getIntent().getStringExtra("Detector");
+      if(s == null) {
+        detector1 =
+                TensorFlowYoloDetector.create(
+                        getAssets(),
+                        YOLO_MODEL_FILE,
+                        YOLO_INPUT_SIZE,
+                        YOLO_INPUT_NAME,
+                        YOLO_OUTPUT_NAMES,
+                        YOLO_BLOCK_SIZE);
+      }
+      else{
+
+        final String[] sl = s.split(",");
+        double d =  Double.valueOf(sl[0]);
+        d = Math.sqrt(d);
+        YOLO_INPUT_SIZE = (int)d;
+        Log.e("Detector",s +":d: " + YOLO_INPUT_SIZE);
+        if(sl[1].equals("1")){//tiny == 1
+          detector1 =
+                  TensorFlowYoloDetector.create(
+                          getAssets(),
+                          YOLO_MODEL_FILE,
+                          YOLO_INPUT_SIZE,
+                          YOLO_INPUT_NAME,
+                          YOLO_OUTPUT_NAMES,
+                          YOLO_BLOCK_SIZE);
+        }else{//big
+          detector1 =
+                  TensorFlowYoloDetector.create(
+                          getAssets(),
+                          YOLO_MODEL_FILE2,
+                          YOLO_INPUT_SIZE,
+                          YOLO_INPUT_NAME,
+                          YOLO_OUTPUT_NAMES,
+                          YOLO_BLOCK_SIZE);
+        }
+
+      }
 //      detector2 =
 //              TensorFlowYoloDetector.create(
 //                      getAssets(),
@@ -175,7 +209,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
 //                      YOLO_INPUT_NAME,
 //                      YOLO_OUTPUT_NAMES,
 //                      YOLO_BLOCK_SIZE);
-      detector = detector1;
+
     } else {
       detector =
           TensorFlowMultiBoxDetector.create(
@@ -188,7 +222,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
               MB_OUTPUT_LOCATIONS_NAME,
               MB_OUTPUT_SCORES_NAME);
     }
-
+    detector = detector1;
     previewWidth = size.getWidth();
     previewHeight = size.getHeight();
 
@@ -382,12 +416,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
             Log.e("memmem", "mem: " + availHeapSizeInMB);
 
 
-            WifiManager wifiManager = (WifiManager)getApplication().getSystemService(Context.WIFI_SERVICE);
-            WifiInfo wifiInfo = wifiManager.getConnectionInfo();
-            if (wifiInfo != null) {
-              Integer linkSpeed = wifiInfo.getLinkSpeed(); //measured using WifiInfo.LINK_SPEED_UNITS
-              Log.e("wifiwifi", "speed: " + linkSpeed);
-            }
+
 
 
             if(CameraConnectionFragment.changed){
@@ -405,6 +434,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
                               sensorOrientation, MAINTAIN_ASPECT);
               final long t1 = SystemClock.uptimeMillis();
               if(CameraConnectionFragment.CA == 1){
+                CameraConnectionFragment.CA = 0;
                 Log.e("CACACA","OK1");
 //                onPause();
 
@@ -462,6 +492,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
               final List<Classifier.Recognition> results = detector.recognizeImage(croppedBitmap);
 
               lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
+              AppendLog.Log("process time: " + lastProcessingTimeMs);
               Log.e("imagesize","time: "+ lastProcessingTimeMs);
               cropCopyBitmap = Bitmap.createBitmap(croppedBitmap);
               final Canvas canvas = new Canvas(cropCopyBitmap);

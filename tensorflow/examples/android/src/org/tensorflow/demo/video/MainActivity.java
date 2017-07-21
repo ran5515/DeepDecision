@@ -1,5 +1,6 @@
 package org.tensorflow.demo.video;
 
+import org.tensorflow.demo.AppendLog;
 import org.tensorflow.demo.DetectorActivity;
 import org.tensorflow.demo.R;
 import org.tensorflow.demo.video.Session;
@@ -9,9 +10,13 @@ import org.tensorflow.demo.video.gl.SurfaceView;
 import org.tensorflow.demo.video.video.VideoQuality;
 import android.app.Activity;
 import android.app.AlertDialog;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.ActivityInfo;
+import android.os.BatteryManager;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.SurfaceHolder;
@@ -42,6 +47,25 @@ public class MainActivity extends Activity implements OnClickListener, Session.C
 	private EditText mEditText,portext;
 	private Session mSession;
 
+
+	private int mBatteryLevel;
+	private IntentFilter mBatteryLevelFilter;
+
+	BroadcastReceiver mBatteryReceiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			mBatteryLevel = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+			//Toast.makeText(context, "Current Battery Level: " + mBatteryLevel, Toast.LENGTH_LONG).show();
+			AppendLog.Log("video Battery: " + mBatteryLevel);
+		}
+	};
+
+	private void registerMyReceiver() {
+		mBatteryLevelFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+		registerReceiver(mBatteryReceiver, mBatteryLevelFilter);
+	}
+
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -65,7 +89,7 @@ public class MainActivity extends Activity implements OnClickListener, Session.C
 		.setAudioEncoder(SessionBuilder.AUDIO_NONE)
 		.setAudioQuality(new AudioQuality(16000, 32000))
 		.setVideoEncoder(SessionBuilder.VIDEO_H264)
-		.setVideoQuality(new VideoQuality(352,288,15,500000))//320 240
+		.setVideoQuality(new VideoQuality(352,288,30,1000000))//320 240
 		.build();
 
 		mButton1.setOnClickListener(this);
@@ -74,6 +98,8 @@ public class MainActivity extends Activity implements OnClickListener, Session.C
 		mButton4.setOnClickListener(this);
 
 		mSurfaceView.getHolder().addCallback(this);
+
+		//registerMyReceiver();
 	}
 
 	@Override

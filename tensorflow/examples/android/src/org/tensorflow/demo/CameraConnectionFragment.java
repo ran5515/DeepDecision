@@ -350,16 +350,18 @@ public class CameraConnectionFragment extends Fragment {
       public void onClick(View v) {
         //AppendLog.Log("Battery Test started!");
         changed = true;
-        big = !big;
-        if (big) {
-          changeMode.setText("click to small");
-          Toast.makeText(getContext(), "Big YOLO!", Toast.LENGTH_SHORT).show();
-        } else {
-          changeMode.setText("click to big");
-          Toast.makeText(getContext(), "Small YOLO!", Toast.LENGTH_SHORT).show();
-        }
-//        CA = 1;
-//        Toast.makeText(getContext(), "CA: " + CA, Toast.LENGTH_SHORT).show();
+
+//        big = !big;
+//        if (big) {
+//          changeMode.setText("click to small");
+//          Toast.makeText(getContext(), "Big YOLO!", Toast.LENGTH_SHORT).show();
+//        } else {
+//          changeMode.setText("click to big");
+//          Toast.makeText(getContext(), "Small YOLO!", Toast.LENGTH_SHORT).show();
+//        }
+
+        CA = 1;
+        Toast.makeText(getContext(), "CA: " + CA, Toast.LENGTH_SHORT).show();
 
       }
     });

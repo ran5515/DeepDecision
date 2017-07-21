@@ -19,11 +19,16 @@ package org.tensorflow.demo;
 import android.Manifest;
 import android.app.Activity;
 import android.app.Fragment;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.content.pm.PackageManager;
 import android.media.Image.Plane;
 import android.media.ImageReader.OnImageAvailableListener;
+import android.net.wifi.WifiInfo;
+import android.net.wifi.WifiManager;
+import android.os.BatteryManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
@@ -40,9 +45,9 @@ import org.tensorflow.demo.video.MainActivity;
 
 public abstract class CameraActivity extends Activity implements OnImageAvailableListener {
   private static final Logger LOGGER = new Logger();
-
+  private static final String TAG = "CameraActivity";
   private static final int PERMISSIONS_REQUEST = 1;
-
+  private final int numLocalModel = 2;
   private static final String PERMISSION_CAMERA = Manifest.permission.CAMERA;
   private static final String PERMISSION_STORAGE = Manifest.permission.WRITE_EXTERNAL_STORAGE;
 
@@ -50,6 +55,25 @@ public abstract class CameraActivity extends Activity implements OnImageAvailabl
 
   private Handler handler;
   private HandlerThread handlerThread;
+
+
+  private int mBatteryLevel;
+  private IntentFilter mBatteryLevelFilter;
+
+  BroadcastReceiver mBatteryReceiver = new BroadcastReceiver() {
+    @Override
+    public void onReceive(Context context, Intent intent) {
+      mBatteryLevel = intent.getIntExtra(BatteryManager.EXTRA_LEVEL, -1);
+      //Toast.makeText(context, "Current Battery Level: " + mBatteryLevel, Toast.LENGTH_LONG).show();
+      AppendLog.Log("Battery Level: " + mBatteryLevel);
+    }
+  };
+
+  private void registerMyReceiver() {
+    mBatteryLevelFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+    registerReceiver(mBatteryReceiver, mBatteryLevelFilter);
+  }
+
 
   @Override
   protected void onCreate(final Bundle savedInstanceState) {
@@ -65,15 +89,139 @@ public abstract class CameraActivity extends Activity implements OnImageAvailabl
       requestPermission();
     }
 
+    //registerMyReceiver();
+
     Handler mHandler = new Handler();
+
     new Thread(new Runnable() {
       @Override
       public void run() {
         // TODO Auto-generated method stub
+        Integer linkSpeed;
+        boolean first = true;
+        double oldBitrate = 0.0;
+        double oldRes = 0.0;
+        double oldFrame = 0.0;
+        double oldDecision = 0.0;
+
         while (true) {
           try {
             Thread.sleep(10000);
-            Log.e("decisiondeci","hehe");
+
+
+            int net = 0;
+            WifiManager wifiManager = (WifiManager)getApplication().getSystemService(Context.WIFI_SERVICE);
+            WifiInfo wifiInfo = wifiManager.getConnectionInfo();
+            if (wifiInfo != null) {
+              linkSpeed = wifiInfo.getLinkSpeed(); //measured using WifiInfo.LINK_SPEED_UNITS
+
+              net = Integer.parseInt(linkSpeed.toString())*1000;
+              Log.e(TAG, "speed: " + net);
+            }
+
+
+            if(net <= 0) net = 0;
+            //hard-coded data
+            double costTarget = 0.01; //$/s. This constraint get very low before it matters.
+            double costPerBit = 10.0/8.0/Math.pow(10,9); // $/b. Here use the value $10/GB
+            double batteryTarget = 5000;  //mW
+            double networkBandwidth = net;   //kbps
+            double networkLatency = 10; //ms
+
+            //When performing interpolation/inverse, it will not work if searching for an x-value is larger than the domain of the function.
+            //Therefore, set the smallest x-value to 0 and the largest x-value to the maximum possible.
+            //Some of the functions are 1D (f:R->R), while others are 2D (f:R^2->R)
+            //For the 2D functions, enter the y values as a matrix of size |x1| * |x2|
+
+            //accuracy function. Data taken from Xiaodan's experiments.
+            //x1=resolution (pixels^2), x2=kbits/frame
+            MeasureFxn accuracyRemote = new MeasureFxn("25340,76800,101370,307200","3,8,16,30","20.45,19.72,19.60,19.57;40.85,45.57,44.7,45.2;59.91,64.91,68.78,72.44;42.76,44.82,43.64,43.00");
+            MeasureFxn accuracyLocalTinyYolo = new MeasureFxn("25340,76800,101370,307200","3,6,17,30","29.80,30.27,31.34,31.06;48.27,50.83,51.92,52.88;62.87,72.48,76.65,80.48;53.74,58.52,58.95,57.76");
+//        MeasureFxn accuracyLocalTinyYolo = new MeasureFxn("25340,76800,101370,307200","3,6,17,30","0,0,0,0;0,0,0,0;0,0,0,0;0,0,0,0");
+            MeasureFxn accuracyLocalBigYolo = new MeasureFxn("25340,76800,101370,307200","3,8,16,30","20.45,19.72,19.60,19.57;40.85,45.57,44.7,45.2;59.91,64.91,68.78,72.44;42.76,44.82,43.64,43.00");
+//        MeasureFxn accuracyLocalBigYolo = new MeasureFxn("25340,76800,101370,307200","3,8,16,30","0,0,0,0;0,0,0,0;0,0,0,0;0,0,0,0");
+            MeasureFxn[] accuracy = new MeasureFxn[numLocalModel + 1];
+            accuracy[0] = accuracyRemote;
+            accuracy[1] = accuracyLocalTinyYolo;
+            accuracy[2] = accuracyLocalBigYolo;
+
+            //latency function. Data taken from Xukan's experiments.
+            MeasureFxn latencyLocalTinyYolo = new MeasureFxn("25600,50176,82944,123904,173056,230400","144,266,371,561,942,1007");  //x=resolution, y=latency (ms)
+            MeasureFxn latencyLocalBigYolo = new MeasureFxn("25600,50176,82944,123904,173056,230400","661,1200,1800,2700,3600,4312");
+            MeasureFxn[] latency = new MeasureFxn[numLocalModel + 1];
+            //there is no latency[0] for remote because we use an equation
+            latency[1] = (latencyLocalTinyYolo);
+            latency[2] = (latencyLocalBigYolo);
+
+            //battery function. Data taken from ??
+            MeasureFxn batteryRemote = new MeasureFxn("100,500,1000","1000,2000,3000","2983,2983,2983;2984,2984,2984;2985,2985,2985");    //x1=bitrate, x2=bandwidth
+            MeasureFxn batteryLocalTinyYolo = new MeasureFxn("25340,76800,101370,307200","4144,4312,4928,4013");  //x1 = resolution, y=battery(mJ)
+            MeasureFxn batteryLocalBigYolo = new MeasureFxn("25340,76800,101370,307200","5750,6957,7343,6352");
+            MeasureFxn[] battery = new MeasureFxn[numLocalModel + 1];
+            battery[0] = (batteryRemote);
+            battery[1] = (batteryLocalTinyYolo);
+            battery[2] = (batteryLocalBigYolo);
+            Log.v(TAG,"hardcode functions");
+
+
+            //setup offloading module
+            Offload o = new Offload(costTarget, costPerBit, batteryTarget);
+            o.setFxns(accuracy, latency, battery);
+            o.setNetworkInput(networkBandwidth, networkLatency);
+            Log.v(TAG,"setup offloading");
+
+            //test 2D interpolation and inverse
+            //String result = "result: " + String.valueOf(batteryRemote.inv(9, 2.5));
+            //String result = "result: " + String.valueOf(batteryRemote.interp(3,4));
+
+            //test 1D interpolation and inverse
+            //String result = "result: " + String.valueOf(batteryLocalTinyYolo.interp(4));
+            //String result = "result: " + String.valueOf(batteryLocalTinyYolo.inv(15));
+            //Log.v(TAG,result);
+
+            //TODO: implement MCDNN
+            //TODO: test tight constraints
+            //TODO: Some test examples by hand
+
+            //run the optimization
+            o.runOptimization();
+
+            //extract the results
+            double bitrate = o.getBitrate();
+            double resolution = o.getResolution();
+            double framerate = o.getFramerate();
+            int decision = o.getDecision();
+
+            Log.v(TAG,"bitrate: " + bitrate);
+            Log.v(TAG,"resolution: " + resolution);
+            Log.v(TAG,"framerate: " + framerate);
+            Log.v(TAG,"decision: " + decision);
+
+            if(first){
+              first = false;
+            }else{
+              if(oldBitrate == bitrate && oldDecision == decision &&
+                      oldFrame == framerate && oldRes == resolution){
+                continue;
+              }
+            }
+            oldBitrate = bitrate;
+            oldRes = resolution;
+            oldFrame = framerate;
+            oldDecision = decision;
+
+
+            if(decision == 0) {
+              Intent intent = new Intent(CameraActivity.this, MainActivity.class).putExtra("Main", ""+bitrate+","+resolution+"," + framerate);
+              startActivity(intent);
+            }else{
+              //decision = 1;
+              Intent intent = new Intent(CameraActivity.this, DetectorActivity.class).putExtra("Detector", ""+resolution+"," + decision);
+              //intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_NEW_TASK);
+              startActivity(intent);
+            }
+
+
           } catch (Exception e) {
             // TODO: handle exception
           }
