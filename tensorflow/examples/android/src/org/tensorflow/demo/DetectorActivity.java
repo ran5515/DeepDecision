@@ -492,7 +492,7 @@ public class DetectorActivity extends CameraActivity implements OnImageAvailable
               final List<Classifier.Recognition> results = detector.recognizeImage(croppedBitmap);
 
               lastProcessingTimeMs = SystemClock.uptimeMillis() - startTime;
-              AppendLog.Log("process time: " + lastProcessingTimeMs);
+              //AppendLog.Log("process time: " + lastProcessingTimeMs);
               Log.e("imagesize","time: "+ lastProcessingTimeMs);
               cropCopyBitmap = Bitmap.createBitmap(croppedBitmap);
               final Canvas canvas = new Canvas(cropCopyBitmap);

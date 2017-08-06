@@ -39,6 +39,7 @@ import java.net.UnknownHostException;
  */
 public class MainActivity extends Activity implements OnClickListener, Session.Callback, SurfaceHolder.Callback {
 	private Socket socket;
+	private Boolean stop = false;
 	private static final int SERVERPORT = 8889;
 	private final static String TAG = "MainActivity";
 
@@ -80,6 +81,8 @@ public class MainActivity extends Activity implements OnClickListener, Session.C
 		mSurfaceView = (SurfaceView) findViewById(R.id.surface);
 		mEditText = (EditText) findViewById(R.id.editText1);
 		portext = (EditText) findViewById(R.id.editText2);
+		getIntent().getStringExtra("Detector");
+
 
 		mSession = SessionBuilder.getInstance()
 		.setCallback(this)
@@ -89,7 +92,7 @@ public class MainActivity extends Activity implements OnClickListener, Session.C
 		.setAudioEncoder(SessionBuilder.AUDIO_NONE)
 		.setAudioQuality(new AudioQuality(16000, 32000))
 		.setVideoEncoder(SessionBuilder.VIDEO_H264)
-		.setVideoQuality(new VideoQuality(352,288,30,1000000))//320 240
+		.setVideoQuality(new VideoQuality(352,288,30,900000))//320 240
 		.build();
 
 		mButton1.setOnClickListener(this);
@@ -113,6 +116,12 @@ public class MainActivity extends Activity implements OnClickListener, Session.C
 	}
 
 	@Override
+	protected void onPause() {
+		stop = true;
+		super.onPause();
+	}
+
+	@Override
 	public void onDestroy() {
 		super.onDestroy();
 		mSession.release();
@@ -122,6 +131,7 @@ public class MainActivity extends Activity implements OnClickListener, Session.C
 	public void onClick(View v) {
 		if (v.getId() == R.id.button1) {
 			// Starts/stops streaming
+			Log.e("CameraActivity","start!!");
 			mSession.setDestination(mEditText.getText().toString());
 			if (!mSession.isStreaming()) {
 				mSession.configure();
@@ -224,7 +234,7 @@ public class MainActivity extends Activity implements OnClickListener, Session.C
 				String s;
 				//Log.v("Results","in Thread1");
 				//s = reader.readLine();
-				while((s = reader.readLine()) != null){
+				while(stop != true && (s = reader.readLine()) != null){
 					System.out.println("Results :" + s);
 				}
 			} catch (UnknownHostException e1) {

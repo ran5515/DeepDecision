@@ -43,6 +43,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.text.TextUtils;
+import android.util.Log;
 import android.util.Size;
 import android.util.SparseIntArray;
 import android.view.LayoutInflater;
@@ -350,18 +351,18 @@ public class CameraConnectionFragment extends Fragment {
       public void onClick(View v) {
         //AppendLog.Log("Battery Test started!");
         changed = true;
+        Log.e("CameraActivity","start!!");
+        big = !big;
+        if (big) {
+          changeMode.setText("click to small");
+          Toast.makeText(getContext(), "Big YOLO!", Toast.LENGTH_SHORT).show();
+        } else {
+          changeMode.setText("click to big");
+          Toast.makeText(getContext(), "Small YOLO!", Toast.LENGTH_SHORT).show();
+        }
 
-//        big = !big;
-//        if (big) {
-//          changeMode.setText("click to small");
-//          Toast.makeText(getContext(), "Big YOLO!", Toast.LENGTH_SHORT).show();
-//        } else {
-//          changeMode.setText("click to big");
-//          Toast.makeText(getContext(), "Small YOLO!", Toast.LENGTH_SHORT).show();
-//        }
-
-        CA = 1;
-        Toast.makeText(getContext(), "CA: " + CA, Toast.LENGTH_SHORT).show();
+//        CA = 1;
+//        Toast.makeText(getContext(), "CA: " + CA, Toast.LENGTH_SHORT).show();
 
       }
     });
